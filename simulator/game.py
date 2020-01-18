@@ -30,9 +30,12 @@ class Game:
         p.resetSimulation()
         p.setGravity(0, 0, -9.8)
 
-        #for video recording (works best on Mac and Linux, not well on Windows)
+        # For video recording (works best on Mac and Linux, not well on Windows)
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "racecar.mp4")
-        p.setRealTimeSimulation(1)
+        
+        # Don't do realtime simulation
+        # We will manually step
+        p.setRealTimeSimulation(0)
 
         self.agent = TrainingBotAgent()
         self.field = Field()
@@ -115,15 +118,12 @@ class Game:
         while True:
             self.read_ui()
             self.process_keyboard_events()
-            # self.monitor_buttons()
+
+            self.monitor_buttons()
+            self.field.buttons.update(1/240)
+
             self.agent.update()
-            # self.field.buttons.update(1/240)
 
-            # Debugging: safe to remove
-            # print(f"buttons state: in_sequence?={self.field.buttons.in_sequence} num_sequenced={self.field.buttons.num_sequenced} extra_sequenced={self.field.buttons.extra_not_sequenced}")
 
-            # # Steps time by 1/240 seconds
-            # p.stepSimulation()
-            # # Sleep for slightly less time to make it seem realitme
-            # # Fudge factor experimentally determined
-            # time.sleep(1/240 - .0002)
+            # Steps time by 1/240 seconds
+            p.stepSimulation()
