@@ -26,6 +26,9 @@ class TrainingBotAgent:
         # Range from -1.0 to 1.0
         self.ltarget_vel, self.rtarget_vel = 0, 0
 
+        # Start autonomous and switch when needed
+        self.keyboard_control = False
+
     def load_urdf(self, cwd):
         """Load the URDF of the trainingbot into the environment
 
@@ -46,9 +49,9 @@ class TrainingBotAgent:
             self.ltarget_vel = -1.0
 
     def normalizeLTargetVel(self):
-        if self.ltarget_vel < -0.1:
+        if self.ltarget_vel < -self.motion_delta:
             self.ltarget_vel += self.motion_delta
-        elif self.ltarget_vel > 0.1:
+        elif self.ltarget_vel > self.motion_delta:
             self.ltarget_vel -= self.motion_delta
 
     def increaseRTargetVel(self):
@@ -62,16 +65,19 @@ class TrainingBotAgent:
             self.rtarget_vel = -1.0
 
     def normalizeRTargetVel(self):
-        if self.rtarget_vel < -0.1:
+        if self.rtarget_vel < -self.motion_delta:
             self.rtarget_vel += self.motion_delta
-        elif self.rtarget_vel > 0.1:
+        elif self.rtarget_vel > self.motion_delta:
             self.rtarget_vel -= self.motion_delta
 
     def set_max_force(self, max_force):
         self.max_force = max_force
 
     def update(self):
-        print(self.ltarget_vel)
+        # Guidance
+        # Only do this if we are not being manually controlled
+        if not self.keyboard_control:
+            pass
 
         # Movement
         p.setJointMotorControlArray(
@@ -96,3 +102,6 @@ class TrainingBotAgent:
           nearVal=0.1,
           farVal=3.1)
         p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+
+    def get_next_waypoint(self):
+        pass

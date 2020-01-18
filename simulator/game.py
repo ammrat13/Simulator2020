@@ -74,18 +74,24 @@ class Game:
         keys = p.getKeyboardEvents()
 
         if keys.get(65296): #right
+            self.agent.keyboard_control = True
             self.agent.increaseRTargetVel()
             self.agent.decreaseLTargetVel()
         elif keys.get(65295): #left
+            self.agent.keyboard_control = True
             self.agent.increaseLTargetVel()
             self.agent.decreaseRTargetVel()
         elif keys.get(65297): #up
+            self.agent.keyboard_control = True
             self.agent.increaseLTargetVel()
             self.agent.increaseRTargetVel()
         elif keys.get(65298): #down
+            self.agent.keyboard_control = True
             self.agent.decreaseLTargetVel()
             self.agent.decreaseRTargetVel()
-        else:
+        # Only interfere if we are controlling with keys
+        # Otherwise, the agent will handle stopping
+        elif self.agent.keyboard_control:
             self.agent.normalizeLTargetVel()
             self.agent.normalizeRTargetVel()
 
@@ -116,6 +122,8 @@ class Game:
         self.load_ui()
 
         while True:
+            old_time = time.time()
+
             self.read_ui()
             self.process_keyboard_events()
 
@@ -124,6 +132,9 @@ class Game:
 
             self.agent.update()
 
-
             # Steps time by 1/240 seconds
             p.stepSimulation()
+
+            # Sleep to 1/240 seconds if we need to
+            if 1/240 - (time.time() - old_time) > 0:
+                time.sleep(1/240 - (time.time() - old_time))
