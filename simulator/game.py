@@ -9,7 +9,6 @@ import os
 import time
 import pybullet as p
 
-from simulator.racecar_agent import RacecarAgent
 from simulator.field import Field
 from simulator.legos import Legos
 from simulator.utilities import Utilities
