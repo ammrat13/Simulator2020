@@ -32,7 +32,7 @@ class Game:
 
         # For video recording (works best on Mac and Linux, not well on Windows)
         #p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, "racecar.mp4")
-        
+
         # Don't do realtime simulation
         # We will manually step
         p.setRealTimeSimulation(0)
@@ -46,7 +46,7 @@ class Game:
         Including field, buttons, and more.
         """
         self.field.load_urdf(self.cwd)
-        self.legos.load_lego_urdfs(self.cwd, [(0, .3, "#ffffff")])        
+        self.legos.load_lego_urdfs(self.cwd, [(0, .3, "#ffffff")])
 
     def load_agents(self):
         """Loading the agents

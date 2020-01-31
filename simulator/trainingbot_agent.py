@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 File:          trainingbot_agent.py
-Author:        Binit Shah 
+Author:        Binit Shah
 Last Modified: Binit on 12/11
 """
 
@@ -111,7 +111,7 @@ class TrainingBotAgent:
         L = .1
         D = .22
 
-        BEZIERX = [-.93,.3,5.28,0]
+        BEZIERX = [-.93,.3,-0.3,0]
         BEZIERY = [0,0,.3,-.2]
 
         currentTheta = 0.0
@@ -121,7 +121,7 @@ class TrainingBotAgent:
             jstates = p.getJointStates(self.robot, self.motor_links)
             wr = jstates[0][1]
             wl = jstates[1][1]
-            
+
             xDotC0 = R/2 * cos(currentTheta) - D/L * sin(currentTheta)
             xDotC1 = R/2 * cos(currentTheta) + D/L * sin(currentTheta)
             yDotC0 = R/2 * sin(currentTheta) + D/L * cos(currentTheta)
@@ -139,7 +139,7 @@ class TrainingBotAgent:
             yDotTarg = 3*BEZIERY[3] * currentU**2 + 2*BEZIERY[2] * currentU + BEZIERY[1]
             currentU += min(dl / sqrt(xDotTarg**2 + yDotTarg**2), .003)
 
-            
+
             matDetInv = 1 / (xDotC0*yDotC1 - xDotC1*yDotC0)
             wrTarg = yDotC1*matDetInv*xDotTarg - xDotC1*matDetInv*yDotTarg
             wlTarg = -yDotC0*matDetInv*xDotTarg + xDotC0*matDetInv*xDotTarg
@@ -149,5 +149,5 @@ class TrainingBotAgent:
             wlTarg /= wmax
 
             print(currentU)
+            # print("currentPos: ", p.getBasePositionAndOrientation(self.robot))
             yield (wrTarg, wlTarg)
-
