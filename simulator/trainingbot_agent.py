@@ -5,6 +5,8 @@ Author:        Binit Shah
 Last Modified: Binit on 12/11
 """
 
+from math import cos, sin, sqrt
+
 import pybullet as p
 
 from simulator.utilities import Utilities
@@ -25,6 +27,7 @@ class TrainingBotAgent:
         # As fractions of self.velocity_limit
         # Range from -1.0 to 1.0
         self.ltarget_vel, self.rtarget_vel = 0, 0
+        self.vel_gen = self.generate_target_velocities()
 
         # Start autonomous and switch when needed
         self.keyboard_control = False
@@ -77,7 +80,7 @@ class TrainingBotAgent:
         # Guidance
         # Only do this if we are not being manually controlled
         if not self.keyboard_control:
-            pass
+            self.rtarget_vel, self.ltarget_vel = next(self.vel_gen)
 
         # Movement
         p.setJointMotorControlArray(
@@ -103,5 +106,48 @@ class TrainingBotAgent:
           farVal=3.1)
         p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
 
-    def get_next_waypoint(self):
-        pass
+    def generate_target_velocities(self):
+        R = .04299
+        L = .1
+        D = .22
+
+        BEZIERX = [-.93,.3,5.28,0]
+        BEZIERY = [0,0,.3,-.2]
+
+        currentTheta = 0.0
+        currentU = 0.0
+
+        while True:
+            jstates = p.getJointStates(self.robot, self.motor_links)
+            wr = jstates[0][1]
+            wl = jstates[1][1]
+            
+            xDotC0 = R/2 * cos(currentTheta) - D/L * sin(currentTheta)
+            xDotC1 = R/2 * cos(currentTheta) + D/L * sin(currentTheta)
+            yDotC0 = R/2 * sin(currentTheta) + D/L * cos(currentTheta)
+            yDotC1 = R/2 * sin(currentTheta) - D/L * cos(currentTheta)
+
+            xDot = max(xDotC0*wr + xDotC1*wl, 0)
+            yDot = max(yDotC0*wr + yDotC1*wl, 0)
+            thetaDot = wr * R/D - wl * R/D
+
+            currentTheta += thetaDot / 240
+
+
+            dl = sqrt(xDot**2 + yDot**2)
+            xDotTarg = 3*BEZIERX[3] * currentU**2 + 2*BEZIERX[2] * currentU + BEZIERX[1]
+            yDotTarg = 3*BEZIERY[3] * currentU**2 + 2*BEZIERY[2] * currentU + BEZIERY[1]
+            currentU += min(dl / sqrt(xDotTarg**2 + yDotTarg**2), .003)
+
+            
+            matDetInv = 1 / (xDotC0*yDotC1 - xDotC1*yDotC0)
+            wrTarg = yDotC1*matDetInv*xDotTarg - xDotC1*matDetInv*yDotTarg
+            wlTarg = -yDotC0*matDetInv*xDotTarg + xDotC0*matDetInv*xDotTarg
+
+            wmax = max(wrTarg, wlTarg)
+            wrTarg /= wmax
+            wlTarg /= wmax
+
+            print(currentU)
+            yield (wrTarg, wlTarg)
+
