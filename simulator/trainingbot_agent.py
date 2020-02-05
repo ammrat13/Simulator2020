@@ -107,47 +107,60 @@ class TrainingBotAgent:
         p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
 
     def generate_target_velocities(self):
-        R = .04299
+        R = .035
         L = .1
         D = .22
 
-        BEZIERX = [-.93,.3,-0.3,0]
-        BEZIERY = [0,0,.3,-.2]
+        BEZIERX = [-.93,2,-1,0]
+        BEZIERY = [0,0,1,-2]
 
         currentTheta = 0.0
         currentU = 0.0
 
+        lastCtrlPt = p.multiplyTransforms(
+                        p.getBasePositionAndOrientation(self.robot)[0],
+                        p.getBasePositionAndOrientation(self.robot)[1],
+                        (0,0,L),
+                        (0,0,0,1))[0]
+
         while True:
             jstates = p.getJointStates(self.robot, self.motor_links)
-            wr = jstates[0][1]
-            wl = jstates[1][1]
+            wl = jstates[0][1]
+            wr = jstates[1][1]
 
             xDotC0 = R/2 * cos(currentTheta) - D/L * sin(currentTheta)
             xDotC1 = R/2 * cos(currentTheta) + D/L * sin(currentTheta)
             yDotC0 = R/2 * sin(currentTheta) + D/L * cos(currentTheta)
             yDotC1 = R/2 * sin(currentTheta) - D/L * cos(currentTheta)
 
-            xDot = max(xDotC0*wr + xDotC1*wl, 0)
-            yDot = max(yDotC0*wr + yDotC1*wl, 0)
+            #xDot = xDotC0*wr + xDotC1*wl
+            #yDot = yDotC0*wr + yDotC1*wl
             thetaDot = wr * R/D - wl * R/D
 
             currentTheta += thetaDot / 240
 
+            newCtrlPt = p.multiplyTransforms(
+                            p.getBasePositionAndOrientation(self.robot)[0],
+                            p.getBasePositionAndOrientation(self.robot)[1],
+                            (0,0,L),
+                            (0,0,0,1))[0]
+            xDot = 240 * (newCtrlPt[0] - lastCtrlPt[0])
+            yDot = 240 * (newCtrlPt[1] - lastCtrlPt[1])
+            lastCtrlPt = newCtrlPt
 
-            dl = sqrt(xDot**2 + yDot**2)
+            dl = sqrt(xDot**2 + yDot**2) / 240
             xDotTarg = 3*BEZIERX[3] * currentU**2 + 2*BEZIERX[2] * currentU + BEZIERX[1]
             yDotTarg = 3*BEZIERY[3] * currentU**2 + 2*BEZIERY[2] * currentU + BEZIERY[1]
-            currentU += min(dl / sqrt(xDotTarg**2 + yDotTarg**2), .003)
+            currentU += dl / sqrt(xDotTarg**2 + yDotTarg**2)
 
 
             matDetInv = 1 / (xDotC0*yDotC1 - xDotC1*yDotC0)
             wrTarg = yDotC1*matDetInv*xDotTarg - xDotC1*matDetInv*yDotTarg
-            wlTarg = -yDotC0*matDetInv*xDotTarg + xDotC0*matDetInv*xDotTarg
+            wlTarg = -yDotC0*matDetInv*xDotTarg + xDotC0*matDetInv*yDotTarg
 
-            wmax = max(wrTarg, wlTarg)
-            wrTarg /= wmax
-            wlTarg /= wmax
+            wmax = max(abs(wrTarg), abs(wlTarg))
+            wrTarg /= max(1, wmax)
+            wlTarg /= max(1, wmax)
 
-            print(currentU)
-            # print("currentPos: ", p.getBasePositionAndOrientation(self.robot))
-            yield (wrTarg, wlTarg)
+            print(f"{lastCtrlPt}")
+            yield (wlTarg, wrTarg)
