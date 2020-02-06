@@ -123,6 +123,14 @@ class TrainingBotAgent:
                         (0,0,L),
                         (0,0,0,1))[0]
 
+        lid = p.addUserDebugLine(
+                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
+                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
+                         -10],
+                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
+                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
+                         10])
+
         while True:
             jstates = p.getJointStates(self.robot, self.motor_links)
             wl = jstates[0][1]
@@ -133,8 +141,8 @@ class TrainingBotAgent:
             yDotC0 = R/2 * sin(currentTheta) + D/L * cos(currentTheta)
             yDotC1 = R/2 * sin(currentTheta) - D/L * cos(currentTheta)
 
-            #xDot = xDotC0*wr + xDotC1*wl
-            #yDot = yDotC0*wr + yDotC1*wl
+            myxDot = xDotC0*wr + xDotC1*wl
+            myyDot = yDotC0*wr + yDotC1*wl
             thetaDot = wr * R/D - wl * R/D
 
             currentTheta += thetaDot / 240
@@ -162,5 +170,15 @@ class TrainingBotAgent:
             wrTarg /= max(1, wmax)
             wlTarg /= max(1, wmax)
 
-            print(f"{lastCtrlPt}")
+            p.removeUserDebugItem(lid);
+            lid = p.addUserDebugLine(
+                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
+                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
+                         -10],
+                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
+                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
+                         10])
+
+            print(f"{xDot - myxDot} {yDot - myyDot}")
+
             yield (wlTarg, wrTarg)
