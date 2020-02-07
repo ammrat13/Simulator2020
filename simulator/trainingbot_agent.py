@@ -104,7 +104,7 @@ class TrainingBotAgent:
           aspect=1.0,
           nearVal=0.1,
           farVal=3.1)
-        p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        #p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
 
     def generate_target_velocities(self):
         R = .035
@@ -136,14 +136,14 @@ class TrainingBotAgent:
             wl = jstates[0][1]
             wr = jstates[1][1]
 
-            xDotC0 = R/2 * cos(currentTheta) - D/L * sin(currentTheta)
-            xDotC1 = R/2 * cos(currentTheta) + D/L * sin(currentTheta)
-            yDotC0 = R/2 * sin(currentTheta) + D/L * cos(currentTheta)
-            yDotC1 = R/2 * sin(currentTheta) - D/L * cos(currentTheta)
+            xDotC0 = R/2 * cos(currentTheta) - R*L/D * sin(currentTheta)
+            xDotC1 = R/2 * cos(currentTheta) + R*L/D * sin(currentTheta)
+            yDotC0 = R/2 * sin(currentTheta) + R*L/D * cos(currentTheta)
+            yDotC1 = R/2 * sin(currentTheta) - R*L/D * cos(currentTheta)
 
-            myxDot = xDotC0*wr + xDotC1*wl
-            myyDot = yDotC0*wr + yDotC1*wl
-            thetaDot = wr * R/D - wl * R/D
+            xDot = xDotC0*wr + xDotC1*wl
+            yDot = yDotC0*wr + yDotC1*wl
+            thetaDot = (R/D)*wr + (-R/D)*wl
 
             currentTheta += thetaDot / 240
 
@@ -152,8 +152,8 @@ class TrainingBotAgent:
                             p.getBasePositionAndOrientation(self.robot)[1],
                             (0,0,L),
                             (0,0,0,1))[0]
-            xDot = 240 * (newCtrlPt[0] - lastCtrlPt[0])
-            yDot = 240 * (newCtrlPt[1] - lastCtrlPt[1])
+            myxDot = 240 * (newCtrlPt[0] - lastCtrlPt[0])
+            myyDot = 240 * (newCtrlPt[1] - lastCtrlPt[1])
             lastCtrlPt = newCtrlPt
 
             dl = sqrt(xDot**2 + yDot**2) / 240
