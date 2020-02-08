@@ -39,3 +39,25 @@ class Utilities:
         py_uid = p.addUserDebugLine(po, py, y_color, lineWidth, lifeTime, parentObjectUniqueId, parentLinkIndex, replaceItemUniqueIds[1])
         pz_uid = p.addUserDebugLine(po, pz, z_color, lineWidth, lifeTime, parentObjectUniqueId, parentLinkIndex, replaceItemUniqueIds[2])
         return (px_uid, py_uid, pz_uid)
+
+    def add_bezier_curve(BEZIERX,
+                        BEZIERY,
+                        steps = 100,
+                        z = 0.1,
+                        lineWidth=1,
+                        lifeTime=0,
+                        parentObjectUniqueId=-1,
+                        parentLinkIndex=-1,
+                        replaceItemUniqueIds = -1):
+        curve = []
+        for i in range(steps):
+            u_initial = i/steps
+            u_final = (i + 1)/steps
+            x_initial = BEZIERX[0] + BEZIERX[1]*u_initial + BEZIERX[2]*(u_initial**2) + BEZIERX[3]*(u_initial**3)
+            x_final = BEZIERX[0] + BEZIERX[1]*u_final + BEZIERX[2]*(u_final**2) + BEZIERX[3]*(u_final**3)
+            y_initial = BEZIERY[0] + BEZIERY[1]*u_initial + BEZIERY[2]*(u_initial**2) + BEZIERY[3]*(u_initial**3)
+            y_final = BEZIERY[0] + BEZIERY[1]*u_final + BEZIERY[2]*(u_final**2) + BEZIERY[3]*(u_final**3)
+            p_initial = [x_initial, y_initial, z]
+            p_final = [x_final, y_final, z]
+            curve.append(p.addUserDebugLine(p_initial, p_final, np.array([1,0,0]), lineWidth, lifeTime, parentObjectUniqueId, parentLinkIndex, replaceItemUniqueIds))
+        return curve

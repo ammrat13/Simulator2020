@@ -107,12 +107,14 @@ class TrainingBotAgent:
         #p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
 
     def generate_target_velocities(self):
-        R = .035
+        R = .045
         L = .1
-        D = .22
+        D = .2427
 
         BEZIERX = [-.93,2,-1,0]
         BEZIERY = [0,0,1,-2]
+
+        curve = Utilities.add_bezier_curve(BEZIERX, BEZIERY)
 
         currentTheta = 0.0
         currentU = 0.0
@@ -120,7 +122,7 @@ class TrainingBotAgent:
         lastCtrlPt = p.multiplyTransforms(
                         p.getBasePositionAndOrientation(self.robot)[0],
                         p.getBasePositionAndOrientation(self.robot)[1],
-                        (0,0,L),
+                        (0,0,L + 0.074676),
                         (0,0,0,1))[0]
 
         lid = p.addUserDebugLine(
@@ -130,6 +132,7 @@ class TrainingBotAgent:
                         [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
                          BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
                          10])
+        ctrl = p.addUserDebugLine([lastCtrlPt[0], lastCtrlPt[1], -10], [lastCtrlPt[0], lastCtrlPt[1], 10])
 
         while True:
             jstates = p.getJointStates(self.robot, self.motor_links)
@@ -150,7 +153,7 @@ class TrainingBotAgent:
             newCtrlPt = p.multiplyTransforms(
                             p.getBasePositionAndOrientation(self.robot)[0],
                             p.getBasePositionAndOrientation(self.robot)[1],
-                            (0,0,L),
+                            (0,0,L + 0.074676),
                             (0,0,0,1))[0]
             myxDot = 240 * (newCtrlPt[0] - lastCtrlPt[0])
             myyDot = 240 * (newCtrlPt[1] - lastCtrlPt[1])
@@ -178,6 +181,8 @@ class TrainingBotAgent:
                         [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
                          BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
                          10])
+            p.removeUserDebugItem(ctrl)
+            ctrl = p.addUserDebugLine([lastCtrlPt[0], lastCtrlPt[1], -10], [lastCtrlPt[0], lastCtrlPt[1], 10])
 
             print(f"{xDot - myxDot} {yDot - myyDot}")
 
