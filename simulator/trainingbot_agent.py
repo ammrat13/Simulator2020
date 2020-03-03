@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """
 File:          trainingbot_agent.py
+<<<<<<< HEAD
 Author:        Binit Shah
 Last Modified: Binit on 12/11
+=======
+Author:        Binit Shah 
+Last Modified: Binit on 2/20
+>>>>>>> upstream/master
 """
 
 from math import cos, sin, sqrt
@@ -13,7 +18,7 @@ from simulator.utilities import Utilities
 
 class TrainingBotAgent:
     """The TrainingBotAgent class maintains the trainingbot agent"""
-    def __init__(self, motion_delta=0.1):
+    def __init__(self, motion_delta=0.5, skew=0.0):
         """Setups infomation about the agent
         """
         self.camera_link = 15
@@ -27,19 +32,31 @@ class TrainingBotAgent:
         # As fractions of self.velocity_limit
         # Range from -1.0 to 1.0
         self.ltarget_vel, self.rtarget_vel = 0, 0
-        self.vel_gen = self.generate_target_velocities()
 
-        # Start autonomous and switch when needed
-        self.keyboard_control = False
+        self.lskew = abs(skew) + 1 if skew > 0.0 else 1.0
+        self.rskew = abs(skew) + 1 if skew < 0.0 else 1.0
 
-    def load_urdf(self, cwd):
+        self.enabled = False
+
+    def load_urdf(self):
         """Load the URDF of the trainingbot into the environment
 
         The trainingbot URDF comes with its own dimensions and
         textures, collidables.
         """
-        self.robot = p.loadURDF(Utilities.gen_urdf_path("trainingbot/urdf/trainingbot.urdf", cwd), [-0.93, 0, 0.1], [0.5, 0.5, 0.5, 0.5], useFixedBase=False)
-        p.setJointMotorControlArray(self.robot, self.caster_links, p.VELOCITY_CONTROL, targetVelocities=[0, 0], forces=[0, 0])
+        # TODO - load closer to the ground, ideally on it.
+        self.robot = p.loadURDF(Utilities.gen_urdf_path("TrainingBot/urdf/TrainingBot.urdf"), [-0.93, 0, 0.1], [0.5, 0.5, 0.5, 0.5], useFixedBase=False)
+        p.setJointMotorControlArray(self.robot, self.caster_links, p.VELOCITY_CONTROL, targetVelocities=[100000, 100000], forces=[0, 0])
+
+    def get_pose(self):
+        # TODO - fix orientation
+        pos, ort = p.getBasePositionAndOrientation(self.robot)
+        return (pos[0], pos[1], 0.0)
+
+    def set_pose(self, pose):
+        # TODO - fix orientation
+        p.resetBasePositionAndOrientation([pose[0], pose[1], 0.1], [0.5, 0.5, 0.5, 0.5])
+        return self.get_pose()
 
     def increaseLTargetVel(self):
         self.ltarget_vel += self.motion_delta
@@ -51,12 +68,6 @@ class TrainingBotAgent:
         if self.ltarget_vel <= -1.0:
             self.ltarget_vel = -1.0
 
-    def normalizeLTargetVel(self):
-        if self.ltarget_vel < -self.motion_delta:
-            self.ltarget_vel += self.motion_delta
-        elif self.ltarget_vel > self.motion_delta:
-            self.ltarget_vel -= self.motion_delta
-
     def increaseRTargetVel(self):
         self.rtarget_vel += self.motion_delta
         if self.rtarget_vel >= 1.0:
@@ -67,31 +78,22 @@ class TrainingBotAgent:
         if self.rtarget_vel <= -1.0:
             self.rtarget_vel = -1.0
 
-    def normalizeRTargetVel(self):
-        if self.rtarget_vel < -self.motion_delta:
-            self.rtarget_vel += self.motion_delta
-        elif self.rtarget_vel > self.motion_delta:
-            self.rtarget_vel -= self.motion_delta
-
     def set_max_force(self, max_force):
         self.max_force = max_force
 
-    def update(self):
-        # Guidance
-        # Only do this if we are not being manually controlled
-        if not self.keyboard_control:
-            self.rtarget_vel, self.ltarget_vel = next(self.vel_gen)
+    def read_wheel_velocities(self, noisy=True):
+        # TODO - implement noisy
+        noise = 0.0
+        rmotor, lmotor = p.getJointStates(self.robot, self.motor_links)
+        # print("positions ", rmotor[0], lmotor[0])
+        return (rmotor[1] + noise, lmotor[1] + noise)
 
-        # Movement
-        p.setJointMotorControlArray(
-            self.robot,
-            self.motor_links,
-            p.VELOCITY_CONTROL,
-            targetVelocities=[
-                self.velocity_limit * self.rtarget_vel,
-                self.velocity_limit * self.ltarget_vel],
-            forces=[self.max_force, self.max_force])
+    def command_wheel_velocities(self, rtarget_vel, ltarget_vel):
+        self.rtarget_vel = rtarget_vel
+        self.ltarget_vel = ltarget_vel
+        return self.read_wheel_velocities()
 
+    def capture_image(self):
         # Camera
         *_, camera_position, camera_orientation = p.getLinkState(self.robot, self.camera_link)
         camera_look_position, _ = p.multiplyTransforms(camera_position, camera_orientation, [0,0.1,0], [0,0,0,1])
@@ -104,86 +106,9 @@ class TrainingBotAgent:
           aspect=1.0,
           nearVal=0.1,
           farVal=3.1)
-        #p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)
+        return p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)[2]
 
-    def generate_target_velocities(self):
-        R = .045
-        L = .1
-        D = .2427
-
-        BEZIERX = [-.93,2,-1,0]
-        BEZIERY = [0,0,1,-2]
-
-        curve = Utilities.add_bezier_curve(BEZIERX, BEZIERY)
-
-        currentTheta = 0.0
-        currentU = 0.0
-
-        lastCtrlPt = p.multiplyTransforms(
-                        p.getBasePositionAndOrientation(self.robot)[0],
-                        p.getBasePositionAndOrientation(self.robot)[1],
-                        (0,0,L + 0.074676),
-                        (0,0,0,1))[0]
-
-        lid = p.addUserDebugLine(
-                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
-                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
-                         -10],
-                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
-                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
-                         10])
-        ctrl = p.addUserDebugLine([lastCtrlPt[0], lastCtrlPt[1], -10], [lastCtrlPt[0], lastCtrlPt[1], 10])
-
-        while True:
-            jstates = p.getJointStates(self.robot, self.motor_links)
-            wl = jstates[0][1]
-            wr = jstates[1][1]
-
-            xDotC0 = R/2 * cos(currentTheta) - R*L/D * sin(currentTheta)
-            xDotC1 = R/2 * cos(currentTheta) + R*L/D * sin(currentTheta)
-            yDotC0 = R/2 * sin(currentTheta) + R*L/D * cos(currentTheta)
-            yDotC1 = R/2 * sin(currentTheta) - R*L/D * cos(currentTheta)
-
-            xDot = xDotC0*wr + xDotC1*wl
-            yDot = yDotC0*wr + yDotC1*wl
-            thetaDot = (R/D)*wr + (-R/D)*wl
-
-            currentTheta += thetaDot / 240
-
-            newCtrlPt = p.multiplyTransforms(
-                            p.getBasePositionAndOrientation(self.robot)[0],
-                            p.getBasePositionAndOrientation(self.robot)[1],
-                            (0,0,L + 0.074676),
-                            (0,0,0,1))[0]
-            myxDot = 240 * (newCtrlPt[0] - lastCtrlPt[0])
-            myyDot = 240 * (newCtrlPt[1] - lastCtrlPt[1])
-            lastCtrlPt = newCtrlPt
-
-            dl = sqrt(xDot**2 + yDot**2) / 240
-            xDotTarg = 3*BEZIERX[3] * currentU**2 + 2*BEZIERX[2] * currentU + BEZIERX[1]
-            yDotTarg = 3*BEZIERY[3] * currentU**2 + 2*BEZIERY[2] * currentU + BEZIERY[1]
-            currentU += dl / sqrt(xDotTarg**2 + yDotTarg**2)
-
-
-            matDetInv = 1 / (xDotC0*yDotC1 - xDotC1*yDotC0)
-            wrTarg = yDotC1*matDetInv*xDotTarg - xDotC1*matDetInv*yDotTarg
-            wlTarg = -yDotC0*matDetInv*xDotTarg + xDotC0*matDetInv*yDotTarg
-
-            wmax = max(abs(wrTarg), abs(wlTarg))
-            wrTarg /= max(1, wmax)
-            wlTarg /= max(1, wmax)
-
-            p.removeUserDebugItem(lid);
-            lid = p.addUserDebugLine(
-                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
-                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
-                         -10],
-                        [BEZIERX[0]+BEZIERX[1]*currentU+BEZIERX[2]*currentU**2+BEZIERX[3]*currentU**3,
-                         BEZIERY[0]+BEZIERY[1]*currentU+BEZIERY[2]*currentU**2+BEZIERY[3]*currentU**3,
-                         10])
-            p.removeUserDebugItem(ctrl)
-            ctrl = p.addUserDebugLine([lastCtrlPt[0], lastCtrlPt[1], -10], [lastCtrlPt[0], lastCtrlPt[1], 10])
-
-            print(f"{xDot - myxDot} {yDot - myyDot}")
-
-            yield (wlTarg, wrTarg)
+    def step(self):
+        p.setJointMotorControlArray(self.robot, self.motor_links, p.VELOCITY_CONTROL,
+                                    targetVelocities=[self.rtarget_vel * self.rskew, self.ltarget_vel * self.lskew] if self.enabled else [0, 0],
+                                    forces=[self.max_force, self.max_force])
