@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
 File:          trainingbot_agent.py
-<<<<<<< HEAD
-Author:        Binit Shah
-Last Modified: Binit on 12/11
-=======
 Author:        Binit Shah 
 Last Modified: Binit on 2/20
->>>>>>> upstream/master
 """
 
 from math import cos, sin, sqrt
