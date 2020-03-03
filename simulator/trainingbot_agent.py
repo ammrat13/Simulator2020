@@ -55,23 +55,23 @@ class TrainingBotAgent:
 
     def increaseLTargetVel(self):
         self.ltarget_vel += self.motion_delta
-        if self.ltarget_vel >= 1.0:
-            self.ltarget_vel = 1.0
+        if self.ltarget_vel >= self.velocity_limit:
+            self.ltarget_vel = self.velocity_limit
 
     def decreaseLTargetVel(self):
         self.ltarget_vel -= self.motion_delta
-        if self.ltarget_vel <= -1.0:
-            self.ltarget_vel = -1.0
+        if self.ltarget_vel <= -self.velocity_limit:
+            self.ltarget_vel = -self.velocity_limit
 
     def increaseRTargetVel(self):
         self.rtarget_vel += self.motion_delta
-        if self.rtarget_vel >= 1.0:
-            self.rtarget_vel = 1.0
+        if self.rtarget_vel >= self.velocity_limit:
+            self.rtarget_vel = self.velocity_limit
 
     def decreaseRTargetVel(self):
         self.rtarget_vel -= self.motion_delta
-        if self.rtarget_vel <= -1.0:
-            self.rtarget_vel = -1.0
+        if self.rtarget_vel <= -self.velocity_limit:
+            self.rtarget_vel = -self.velocity_limit
 
     def set_max_force(self, max_force):
         self.max_force = max_force
