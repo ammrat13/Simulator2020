@@ -5,8 +5,6 @@ Author:        Binit Shah
 Last Modified: Binit on 2/20
 """
 
-from math import cos, sin, sqrt
-
 import pybullet as p
 
 from simulator.utilities import Utilities
@@ -24,8 +22,7 @@ class TrainingBotAgent:
         self.max_force = 1
         self.motion_delta = motion_delta
         self.velocity_limit = 5
-        # As fractions of self.velocity_limit
-        # Range from -1.0 to 1.0
+
         self.ltarget_vel, self.rtarget_vel = 0, 0
 
         self.lskew = abs(skew) + 1 if skew > 0.0 else 1.0
