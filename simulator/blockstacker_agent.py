@@ -6,9 +6,11 @@ Last Modified: Binit on 3/2
 """
 
 import pybullet as p
+from math import atan2
 
 from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
+from planning2020 import planning
 
 class BlockStackerAgent:
     """The BlockStackerAgent class maintains the blockstacker agent"""
@@ -53,8 +55,10 @@ class BlockStackerAgent:
 
     def get_pose(self):
         # TODO - fix orientation
-        pos, ort = p.getBasePositionAndOrientation(self.robot)
-        return (pos[0], pos[1], 0.0)
+        r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
+        p_pos = p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0]
+        p_theta = atan2(p_pos[1]-r_pos[1], p_pos[0]-r_pos[0])
+        return (p_pos[0], p_pos[1], p_theta)
 
     def set_pose(self, pose):
         # TODO - fix orientation
@@ -72,6 +76,11 @@ class BlockStackerAgent:
         self.drive.rtarget_vel = rtarget_vel
         self.drive.ltarget_vel = ltarget_vel
         return self.read_wheel_velocities()
+
+    def plan(self):
+        po = self.get_pose()
+        Utilities.draw_debug_pose(position=(po[0], po[1], .05))
+        return self.command_wheel_velocities(*planning.compute_wheel_velocities(self.get_pose()))
 
     def capture_image(self):
         # Camera

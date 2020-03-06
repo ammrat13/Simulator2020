@@ -223,7 +223,7 @@ class Buttons:
         try:
             self.button_state[button_num].reading = True
             # Note that this only happens if the first line succeeds
-            self.update(0.0)
+            self.update_buttons(0.0)
         except IndexError:
             # Just change the message
             raise IndexError("we must have 0 <= `button_num` < `num_buttons`")
@@ -248,14 +248,14 @@ class Buttons:
         # Similar try-except to `press_button()`
         try:
             self.button_state[button_num].reading = False
-            self.update(0.0)
+            self.update_buttons(0.0)
         except IndexError:
             raise IndexError("we must have 0 <= `button_num` < `num_buttons`")
         except ValueError:
             raise ValueError("`button_num` must be able to index arrays")
 
 
-    def update(self, dt: float) -> None:
+    def update_buttons(self, dt: float) -> None:
         """Updates all the buttons' states
 
         By far the most involved function in this class, simulating both 

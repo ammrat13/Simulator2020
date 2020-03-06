@@ -22,9 +22,7 @@ class TrainingBotAgent:
         self.max_force = 1
         self.motion_delta = motion_delta
         self.velocity_limit = 5
-
         self.ltarget_vel, self.rtarget_vel = 0, 0
-
         self.lskew = abs(skew) + 1 if skew > 0.0 else 1.0
         self.rskew = abs(skew) + 1 if skew < 0.0 else 1.0
 

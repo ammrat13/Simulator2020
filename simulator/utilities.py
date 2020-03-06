@@ -66,28 +66,6 @@ class Utilities:
 
         return m_uid
 
-    def draw_bezier_curve(BEZIERX,
-                        BEZIERY,
-                        steps = 100,
-                        z = 0.1,
-                        lineWidth=1,
-                        lifeTime=0,
-                        parentObjectUniqueId=-1,
-                        parentLinkIndex=-1,
-                        replaceItemUniqueIds = -1):
-        curve = []
-        for i in range(steps):
-            u_initial = i/steps
-            u_final = (i + 1)/steps
-            x_initial = BEZIERX[0] + BEZIERX[1]*u_initial + BEZIERX[2]*(u_initial**2) + BEZIERX[3]*(u_initial**3)
-            x_final = BEZIERX[0] + BEZIERX[1]*u_final + BEZIERX[2]*(u_final**2) + BEZIERX[3]*(u_final**3)
-            y_initial = BEZIERY[0] + BEZIERY[1]*u_initial + BEZIERY[2]*(u_initial**2) + BEZIERY[3]*(u_initial**3)
-            y_final = BEZIERY[0] + BEZIERY[1]*u_final + BEZIERY[2]*(u_final**2) + BEZIERY[3]*(u_final**3)
-            p_initial = [x_initial, y_initial, z]
-            p_final = [x_final, y_final, z]
-            curve.append(p.addUserDebugLine(p_initial, p_final, np.array([1,0,0]), lineWidth, lifeTime, parentObjectUniqueId, parentLinkIndex, replaceItemUniqueIds))
-        return curve
-
     def print_multibody_links(body_id):
         for link_id in range(p.getNumJoints(body_id)):
             print(p.getJointInfo(body_id, link_id))

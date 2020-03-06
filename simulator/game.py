@@ -9,7 +9,6 @@ import os
 import time
 import pybullet as p
 
-from simulator.racecar_agent import RacecarAgent
 from simulator.field import Field
 from simulator.legos import Legos
 from simulator.trainingbot_agent import TrainingBotAgent
@@ -20,8 +19,8 @@ class Game:
     """Maintains information of one 3 minute round"""
 
     def __init__(self, 
-                 use_interactive=True,
-                 is_interactive_realtime=True,
+                 use_interactive=False,
+                 is_interactive_realtime=False,
                  hide_ui=True,
                  topdown_viewport=False,
                  log_dir=None,
@@ -65,7 +64,7 @@ class Game:
         self.TIMESTEPPING_DT = 1 / 240
         self.PRESSED_THRES = -.0038
 
-        p.connect(p.GUI if self.use_interactive else p.DIRECT)
+        p.connect(p.GUI if self.use_interactive else p.GUI)
         p.resetSimulation()
         p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0 if self.hide_ui else 1)
         if self.topdown_viewport:
@@ -197,6 +196,8 @@ class Game:
             self.read_ui()
         if self.use_interactive and self.mobile_agent.enabled:
             self.mobile_agent.drive.process_keyboard_events(normalize=True)
+        elif self.mobile_agent.enabled:
+            self.mobile_agent.plan()
 
         # self.monitor_buttons()
         self.legos.step(self.mobile_agent.robot, self.mobile_agent.tower_link)
