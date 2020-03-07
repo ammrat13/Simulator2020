@@ -12,6 +12,10 @@ from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
 from planning2020 import planning
 
+binnum = 1
+started = False
+startT = 0
+
 class BlockStackerAgent:
     """The BlockStackerAgent class maintains the blockstacker agent"""
     def __init__(self, vel_delta=0.5, skew=0.0):
@@ -38,7 +42,7 @@ class BlockStackerAgent:
         textures, collidables.
         """
         self.robot = p.loadURDF(Utilities.gen_urdf_path("blockstacker/urdf/blockstacker.urdf"),
-                                [0, 0, 0.05], [0, 0, 0.9999383, 0.0111104], useFixedBase=False)
+                                [-.85, 0.025, 0.07], [0, 0, -.707, .707], useFixedBase=False)
 
         p.setJointMotorControlMultiDof(self.robot,
                                        self.caster_link,
@@ -62,7 +66,7 @@ class BlockStackerAgent:
 
     def set_pose(self, pose):
         # TODO - fix orientation
-        p.resetBasePositionAndOrientation([pose[0], pose[1], 0.1], [0.5, 0.5, 0.5, 0.5])
+        p.resetBasePositionAndOrientation(self.robot, [pose[0], pose[1], 0.07], [0, 0, -.707, .707])
         return self.get_pose()
 
     def read_wheel_velocities(self, noisy=True):
@@ -77,10 +81,23 @@ class BlockStackerAgent:
         self.drive.ltarget_vel = ltarget_vel
         return self.read_wheel_velocities()
 
-    def plan(self):
-        po = self.get_pose()
-        Utilities.draw_debug_pose(position=(po[0], po[1], .05))
-        return self.command_wheel_velocities(*planning.compute_wheel_velocities(self.get_pose()))
+    def plan(self, t):
+        global binnum
+        global started
+        global startT
+        if binnum < 11:
+            if not started:
+                planning.queue_bin(self.get_pose(), binnum, .3)
+                started = True
+                startT = t
+            else:
+                if planning.wp_done():
+                    self.set_pose((-.85,.025))
+                    binnum += 1
+                    print(t - startT)
+                    started = False
+                else:
+                    self.command_wheel_velocities(*planning.compute_wheel_velocities(self.get_pose()))
 
     def capture_image(self):
         # Camera

@@ -197,7 +197,7 @@ class Game:
         if self.use_interactive and self.mobile_agent.enabled:
             self.mobile_agent.drive.process_keyboard_events(normalize=True)
         elif self.mobile_agent.enabled:
-            self.mobile_agent.plan()
+            self.mobile_agent.plan(self.time)
 
         # self.monitor_buttons()
         self.legos.step(self.mobile_agent.robot, self.mobile_agent.tower_link)
