@@ -7,6 +7,7 @@ Last Modified: Binit on 3/2
 
 import pybullet as p
 from math import atan2
+from random import gauss
 
 from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
@@ -57,9 +58,11 @@ class BlockStackerAgent:
                                     forces=[1, 1])
 
     def get_pose(self):
-        # TODO - fix orientation
+        noise = .01
         r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
-        p_pos = p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0]
+        p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0])
+        p_pos[0] += gauss(0, noise)
+        p_pos[1] += gauss(0, noise)
         p_theta = atan2(p_pos[1]-r_pos[1], p_pos[0]-r_pos[0])
         return (p_pos[0], p_pos[1], p_theta)
 
