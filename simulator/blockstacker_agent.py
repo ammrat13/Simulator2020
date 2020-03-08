@@ -12,6 +12,9 @@ from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
 from planning2020 import planning
 
+started = False
+state = 0
+
 class BlockStackerAgent:
     """The BlockStackerAgent class maintains the blockstacker agent"""
     def __init__(self, vel_delta=0.5, skew=0.0):
@@ -38,7 +41,7 @@ class BlockStackerAgent:
         textures, collidables.
         """
         self.robot = p.loadURDF(Utilities.gen_urdf_path("blockstacker/urdf/blockstacker.urdf"),
-                                [0, 0, 0.05], [0, 0, 0.9999383, 0.0111104], useFixedBase=False)
+                                [-.85, 0.05, 0.05], [0, 0, -.707, .707], useFixedBase=False)
 
         p.setJointMotorControlMultiDof(self.robot,
                                        self.caster_link,
@@ -78,9 +81,26 @@ class BlockStackerAgent:
         return self.read_wheel_velocities()
 
     def plan(self):
-        po = self.get_pose()
-        Utilities.draw_debug_pose(position=(po[0], po[1], .05))
-        return self.command_wheel_velocities(*planning.compute_wheel_velocities(self.get_pose()))
+        global started
+        global state
+
+        if not started:
+            started = True
+            if state == 0:
+                planning.queue_bin(self.get_pose(), 1, .3)
+            if state == 1:
+                planning.queue_bin(self.get_pose(), 6, .3)
+            if state == 2:
+                planning.queue_bin(self.get_pose(), 8, .3)
+            if state == 3:
+                planning.queue_bin(self.get_pose(), 2, .3)
+            if state == 4:
+                planning.queue_end(self.get_pose())
+        elif planning.wp_done():
+            started = False
+            state += 1
+        else:
+            self.command_wheel_velocities(*planning.compute_wheel_velocities(self.get_pose()))
 
     def capture_image(self):
         # Camera
