@@ -41,7 +41,7 @@ class BlockStackerAgent:
         textures, collidables.
         """
         self.robot = p.loadURDF(Utilities.gen_urdf_path("blockstacker/urdf/blockstacker.urdf"),
-                                [-.85, 0.05, 0.05], [0, 0, -.707, .707], useFixedBase=False)
+                                [-.85, 0.025, 0.05], [0, 0, -.707, .707], useFixedBase=False)
 
         p.setJointMotorControlMultiDof(self.robot,
                                        self.caster_link,
@@ -65,7 +65,7 @@ class BlockStackerAgent:
 
     def set_pose(self, pose):
         # TODO - fix orientation
-        p.resetBasePositionAndOrientation([pose[0], pose[1], 0.1], [0.5, 0.5, 0.5, 0.5])
+        p.resetBasePositionAndOrientation(self.robot, [pose[0], pose[1], 0.07], [0, 0, -.707, .707])
         return self.get_pose()
 
     def read_wheel_velocities(self, noisy=True):
