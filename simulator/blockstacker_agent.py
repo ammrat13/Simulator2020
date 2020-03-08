@@ -80,7 +80,7 @@ class BlockStackerAgent:
         self.drive.ltarget_vel = ltarget_vel
         return self.read_wheel_velocities()
 
-    def plan(self):
+    def plan(self, t):
         global started
         global state
 
