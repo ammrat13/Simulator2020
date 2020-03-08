@@ -58,7 +58,7 @@ class BlockStackerAgent:
                                     forces=[1, 1])
 
     def get_pose(self):
-        noise = .01
+        noise = .02
         r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
         p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0])
         p_pos[0] += gauss(0, noise)
@@ -98,6 +98,8 @@ class BlockStackerAgent:
             if state == 3:
                 planning.queue_bin(self.get_pose(), 2, .3)
             if state == 4:
+                planning.queue_bin(self.get_pose(), 5, .3)
+            if state == 5:
                 planning.queue_end(self.get_pose())
         elif planning.wp_done():
             started = False
