@@ -6,11 +6,14 @@ Last Modified: Binit on 3/2
 """
 
 import pybullet as p
+import numpy as np
 from math import sin, cos, atan2
 from random import gauss
 
 from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
+
+COM_TO_SIP = .174676
 
 class BlockStackerAgent:
     """The BlockStackerAgent class maintains the blockstacker agent"""
@@ -43,8 +46,9 @@ class BlockStackerAgent:
         The blockstacker URDF comes with its own dimensions and
         textures, collidables.
         """
+        # Note that the position is set later in this method
         self.robot = p.loadURDF(Utilities.gen_urdf_path("blockstacker/urdf/blockstacker.urdf"),
-                                [0, 0, 0.05], [0, 0, 0.9999383, 0.0111104], useFixedBase=False)
+                                [0, 0, 0], [0, 0, 0, 1], useFixedBase=False)
 
         p.setJointMotorControlMultiDof(self.robot,
                                        self.caster_link,
@@ -59,11 +63,14 @@ class BlockStackerAgent:
                                     targetVelocities=[-2, 2],
                                     forces=[1, 1])
 
+        # Set it again because loadURDF uses URDF coordinates not COM
+        self.set_pose((-.73, 0, 0))
+
     def get_pose(self, NOISE_GET_POSE=.02):
         # Get the position of the robot, and use that to extrapolate the 
         #   position of the single integrator point
         r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
-        p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0])
+        p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,COM_TO_SIP,0], [0,0,0,1])[0])
         # Add noise
         p_pos[0] += gauss(0, NOISE_GET_POSE)
         p_pos[1] += gauss(0, NOISE_GET_POSE)
@@ -73,14 +80,15 @@ class BlockStackerAgent:
         return (p_pos[0], p_pos[1], p_theta)
 
     def set_pose(self, pose, SPAWN_Z=.05):
-        # Position is easy -- we are given X, Y, Z
+        # Position is easy -- we are given X, Y, Z. Just remember it is the 
+        #   position of the single integrator point, not the robot itself
         # For theta, we can use axis angle, but remember default orientation 
         #   is .707 - .707k, not identity
         # We can use axis angle to get the desired quaternion
         # Orientation is (cos(t/2) + sin(t/2)k) * (.707 - .707k)
         p.resetBasePositionAndOrientation(
             self.robot,
-            [pose[0], pose[1], SPAWN_Z],
+            [pose[0] - COM_TO_SIP*cos(pose[2]), pose[1] - COM_TO_SIP*sin(pose[2]), SPAWN_Z],
             [0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2))])
         return self.get_pose()
 
@@ -96,15 +104,17 @@ class BlockStackerAgent:
         self.drive.ltarget_vel = ltarget_vel
         return self.read_wheel_velocities()
 
-    def capture_image(self):
-        # Camera
-        *_, camera_position, camera_orientation = p.getLinkState(self.robot, self.camera_link)
+    def capture_image(self, camera_num=0):
+        *_, camera_position, camera_orientation = p.getLinkState(self.robot, self.camera_links[camera_num])
         camera_look_position, _ = p.multiplyTransforms(camera_position, camera_orientation, [0,0.1,0], [0,0,0,1])
         view_matrix = p.computeViewMatrix(
           cameraEyePosition=camera_position,
           cameraTargetPosition=camera_look_position,
           cameraUpVector=(0, 0, 1))
         return p.getCameraImage(300, 300, view_matrix, self.camera_projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)[2]
+
+    def capture_images(self, poses, camera_num=0):
+        pass
 
     def step(self):
         self.drive.step(self.robot, self.enabled)
