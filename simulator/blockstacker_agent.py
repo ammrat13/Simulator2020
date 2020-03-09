@@ -136,7 +136,7 @@ class BlockStackerAgent:
           renderer=p.ER_BULLET_HARDWARE_OPENGL
         )[2]
 
-    def capture_images(self, poses):
+    def capture_images(self, poses, MAKE_TRANSPARENT_BEFORE=True, MAKE_VISIBLE_AFTER=True):
         # The threshold at which objects become invisible for this method
         # Is a weird non-linear function:
         #   trueDepth = far * near / (far - (far-near) * this_value)
@@ -144,6 +144,15 @@ class BlockStackerAgent:
         #   match observation
         # Set it to a value close to one
         DEPTH_MASK = .99
+
+        # If we need to, make outselves transparent
+        # Store the old colors for later
+        old_colors = {}
+        if MAKE_TRANSPARENT_BEFORE:
+            temp = p.getVisualShapeData(self.robot)
+            for ji in range(-1, p.getNumJoints(self.robot)):
+                old_colors[ji] = temp[ji+1][7]
+                p.changeVisualShape(self.robot, ji, rgbaColor=[0,0,0,0])
 
         ret = []
         for po in poses:
@@ -163,6 +172,11 @@ class BlockStackerAgent:
             np.place(img[:,:,3], depth>DEPTH_MASK, 0)
             # Return
             ret.append(img)
+
+        # Make ourselves visible again if we need to
+        if MAKE_VISIBLE_AFTER:
+            for ji, color in old_colors.items():
+                p.changeVisualShape(self.robot, ji, rgbaColor=color)
 
         return ret
 
