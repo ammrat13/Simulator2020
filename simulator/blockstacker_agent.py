@@ -15,6 +15,7 @@ from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
 
 COM_TO_SIP = .174676
+COM_TO_AXE = .074676
 # We center the camera on the y-axis
 # Old offset was [.0807,.0324,.06624]
 CAM_OFFSET_VEC = [.0807,0,.06624]
@@ -88,8 +89,9 @@ class BlockStackerAgent:
         
     def __posort_to_pose__(self, pos, ort):
         # Just use a utility method to extrapolate the SIP
-        p_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_SIP,0], [0,0,0,1])[0]
-        p_theta = atan2(p_pos[1]-pos[1], p_pos[0]-pos[0])
+        p_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_SIP,0], [0,0,0,1])[0][0:2]
+        a_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_AXE,0], [0,0,0,1])[0][0:2]
+        p_theta = atan2(p_pos[1]-a_pos[1], p_pos[0]-a_pos[0])
         return (*p_pos, p_theta)
 
     def get_pose(self, NOISE_POS=.02, NOISE_ANG=10):
