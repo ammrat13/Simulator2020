@@ -16,9 +16,9 @@ from simulator.utilities import Utilities
 
 COM_TO_SIP = .174676
 COM_TO_AXE = .074676
-# We center the camera on the y-axis
+# We center the camera on the x-axis
 # Old offset was [.0807,.0324,.06624]
-CAM_OFFSET_VEC = [.0807,0,.06624]
+CAM_OFFSET_VEC = [0,.0324,.06624]
 
 class BlockStackerAgent:
     """The BlockStackerAgent class maintains the blockstacker agent"""
