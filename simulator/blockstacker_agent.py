@@ -135,20 +135,33 @@ class BlockStackerAgent:
         )[2]
 
     def capture_images(self, poses):
+        # The threshold at which objects become invisible for this method
+        # Is a weird non-linear function:
+        #   trueDepth = far * near / (far - (far-near) * this_value)
+        # Algebra gives `1` for what the mask should be, but that doesn't 
+        #   match observation
+        # Set it to a value close to one
+        DEPTH_MASK = .99
+
         ret = []
         for po in poses:
-            # Assume the camera is parallel to the ground
+            # Compute camera position and orientation
             c_pos, c_ort = self.__pose_to_posort__(po)
             c_pos, _ = p.multiplyTransforms(c_pos, c_ort, CAM_OFFSET_VEC, [0,0,0,1])
             c_lop, _ = p.multiplyTransforms(c_pos, c_ort, [0, self.camera_focal_len, 0], [0,0,0,1])
-            # Actually capture the image using similar logic to capture_image
-            ret.append(p.getCameraImage(
+            # Actually capture the image using similar logic to `capture_image`
+            img, depth = p.getCameraImage(
               self.camera_h_res,
               self.camera_v_res,
               p.computeViewMatrix(c_pos, c_lop, (0,0,1)),
               self.camera_projection_matrix,
               flags=p.ER_NO_SEGMENTATION_MASK
-            )[2])
+            )[2:4]
+            # Transparancy with depth
+            np.place(img[:,:,3], depth>DEPTH_MASK, 0)
+            # Return
+            ret.append(img)
+
         return ret
 
     def step(self):
