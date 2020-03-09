@@ -72,7 +72,7 @@ class BlockStackerAgent:
             (pose[0] - COM_TO_SIP*cos(pose[2]), pose[1] - COM_TO_SIP*sin(pose[2]), SPAWN_Z),
             (0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2)))
         )
-        
+
     def __posort_to_pose__(self, pos, ort):
         # Just use a utility method to extrapolate the SIP
         p_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_SIP,0], [0,0,0,1])[0][0:2]
