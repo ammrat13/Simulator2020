@@ -8,12 +8,14 @@ Last Modified: Binit on 3/2
 import pybullet as p
 import numpy as np
 from math import sin, cos, atan2
-from random import gauss
+from random import gauss, vonmisesvariate
+from operator import sub
 
 from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
 
 COM_TO_SIP = .174676
+CAM_OFFSET_VEC = [.0807,.0324,.06624]
 
 class BlockStackerAgent:
     """The BlockStackerAgent class maintains the blockstacker agent"""
@@ -39,6 +41,9 @@ class BlockStackerAgent:
           aspect=1.0,
           nearVal=0.1,
           farVal=3.1)
+        self.camera_h_res = 300
+        self.camera_v_res = 300
+        self.camera_focal_len = .1
 
     def load_urdf(self):
         """Load the URDF of the blockstacker into the environment
@@ -66,30 +71,40 @@ class BlockStackerAgent:
         # Set it again because loadURDF uses URDF coordinates not COM
         self.set_pose((-.73, 0, 0))
 
-    def get_pose(self, NOISE_GET_POSE=.02):
-        # Get the position of the robot, and use that to extrapolate the 
-        #   position of the single integrator point
-        r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
-        p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,COM_TO_SIP,0], [0,0,0,1])[0])
-        # Add noise
-        p_pos[0] += gauss(0, NOISE_GET_POSE)
-        p_pos[1] += gauss(0, NOISE_GET_POSE)
-        # Compute theta assuming we will be flat along the ground
-        p_theta = atan2(p_pos[1]-r_pos[1], p_pos[0]-r_pos[0])
-
-        return (p_pos[0], p_pos[1], p_theta)
-
-    def set_pose(self, pose, SPAWN_Z=.05):
+    # Utility methods for converting between representations
+    def __pose_to_posort__(self, pose, SPAWN_Z=.05):
         # Position is easy -- we are given X, Y, Z. Just remember it is the 
         #   position of the single integrator point, not the robot itself
         # For theta, we can use axis angle, but remember default orientation 
         #   is .707 - .707k, not identity
         # We can use axis angle to get the desired quaternion
         # Orientation is (cos(t/2) + sin(t/2)k) * (.707 - .707k)
-        p.resetBasePositionAndOrientation(
-            self.robot,
-            [pose[0] - COM_TO_SIP*cos(pose[2]), pose[1] - COM_TO_SIP*sin(pose[2]), SPAWN_Z],
-            [0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2))])
+        return (
+            (pose[0] - COM_TO_SIP*cos(pose[2]), pose[1] - COM_TO_SIP*sin(pose[2]), SPAWN_Z),
+            (0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2)))
+        )
+        
+    def __posort_to_pose__(self, pos, ort):
+        # Just use a utility method to extrapolate the SIP
+        p_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_SIP,0], [0,0,0,1])[0]
+        p_theta = atan2(p_pos[1]-pos[1], p_pos[0]-pos[0])
+        return (*p_pos, p_theta)
+
+    def get_pose(self, NOISE_POS=.02, NOISE_ANG=10):
+        # Get the pose
+        r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
+        pose = list(self.__posort_to_pose__(r_pos, r_ort))
+        # We have to edit since we add noise
+        pose[0] += gauss(0, NOISE_POS)
+        pose[1] += gauss(0, NOISE_POS)
+        pose[2] += vonmisesvariate(0, NOISE_ANG)
+        # Return as needed
+        return tuple(pose)
+
+    def set_pose(self, pose, SPAWN_Z=.05):
+        # Use the utility method
+        p.resetBasePositionAndOrientation(self.robot,
+            *self.__pose_to_posort__(pose, SPAWN_Z=SPAWN_Z))
         return self.get_pose()
 
     def read_wheel_velocities(self, noisy=True):
@@ -111,10 +126,30 @@ class BlockStackerAgent:
           cameraEyePosition=camera_position,
           cameraTargetPosition=camera_look_position,
           cameraUpVector=(0, 0, 1))
-        return p.getCameraImage(300, 300, view_matrix, self.camera_projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)[2]
+        return p.getCameraImage(
+          self.camera_h_res,
+          self.camera_v_res,
+          view_matrix,
+          self.camera_projection_matrix,
+          renderer=p.ER_BULLET_HARDWARE_OPENGL
+        )[2]
 
-    def capture_images(self, poses, camera_num=0):
-        pass
+    def capture_images(self, poses):
+        ret = []
+        for po in poses:
+            # Assume the camera is parallel to the ground
+            c_pos, c_ort = self.__pose_to_posort__(po)
+            c_pos, _ = p.multiplyTransforms(c_pos, c_ort, CAM_OFFSET_VEC, [0,0,0,1])
+            c_lop, _ = p.multiplyTransforms(c_pos, c_ort, [0, self.camera_focal_len, 0], [0,0,0,1])
+            # Actually capture the image using similar logic to capture_image
+            ret.append(p.getCameraImage(
+              self.camera_h_res,
+              self.camera_v_res,
+              p.computeViewMatrix(c_pos, c_lop, (0,0,1)),
+              self.camera_projection_matrix,
+              flags=p.ER_NO_SEGMENTATION_MASK
+            )[2])
+        return ret
 
     def step(self):
         self.drive.step(self.robot, self.enabled)
