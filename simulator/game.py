@@ -155,6 +155,8 @@ class Game:
 
         self.info_id = Utilities.draw_debug_info(self.time)
 
+        self.mobile_agent.set_pose([-.9,0,0])
+
     def reset(self):
         p.restoreState(self.starting_state)
         self.time = self.starting_time

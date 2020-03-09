@@ -6,6 +6,8 @@ Last Modified: Binit on 3/2
 """
 
 import pybullet as p
+from math import sin, cos, atan2
+from random import gauss
 
 from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
@@ -29,6 +31,12 @@ class BlockStackerAgent:
         self.blink = 0
         self.blink_count = 0
 
+        self.camera_projection_matrix = p.computeProjectionMatrixFOV(
+          fov=45.0,
+          aspect=1.0,
+          nearVal=0.1,
+          farVal=3.1)
+
     def load_urdf(self):
         """Load the URDF of the blockstacker into the environment
 
@@ -51,14 +59,29 @@ class BlockStackerAgent:
                                     targetVelocities=[-2, 2],
                                     forces=[1, 1])
 
-    def get_pose(self):
-        # TODO - fix orientation
-        pos, ort = p.getBasePositionAndOrientation(self.robot)
-        return (pos[0], pos[1], 0.0)
+    def get_pose(self, NOISE_GET_POSE=.02):
+        # Get the position of the robot, and use that to extrapolate the 
+        #   position of the single integrator point
+        r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
+        p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0])
+        # Add noise
+        p_pos[0] += gauss(0, NOISE_GET_POSE)
+        p_pos[1] += gauss(0, NOISE_GET_POSE)
+        # Compute theta assuming we will be flat along the ground
+        p_theta = atan2(p_pos[1]-r_pos[1], p_pos[0]-r_pos[0])
 
-    def set_pose(self, pose):
-        # TODO - fix orientation
-        p.resetBasePositionAndOrientation([pose[0], pose[1], 0.1], [0.5, 0.5, 0.5, 0.5])
+        return (p_pos[0], p_pos[1], p_theta)
+
+    def set_pose(self, pose, SPAWN_Z=.05):
+        # Position is easy -- we are given X, Y, Z
+        # For theta, we can use axis angle, but remember default orientation 
+        #   is .707 - .707k, not identity
+        # We can use axis angle to get the desired quaternion
+        # Orientation is (cos(t/2) + sin(t/2)k) * (.707 - .707k)
+        p.resetBasePositionAndOrientation(
+            self.robot,
+            [pose[0], pose[1], SPAWN_Z],
+            [0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2))])
         return self.get_pose()
 
     def read_wheel_velocities(self, noisy=True):
@@ -81,12 +104,7 @@ class BlockStackerAgent:
           cameraEyePosition=camera_position,
           cameraTargetPosition=camera_look_position,
           cameraUpVector=(0, 0, 1))
-        projection_matrix = p.computeProjectionMatrixFOV(
-          fov=45.0,
-          aspect=1.0,
-          nearVal=0.1,
-          farVal=3.1)
-        return p.getCameraImage(300, 300, view_matrix, projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)[2]
+        return p.getCameraImage(300, 300, view_matrix, self.camera_projection_matrix, renderer=p.ER_BULLET_HARDWARE_OPENGL)[2]
 
     def step(self):
         self.drive.step(self.robot, self.enabled)
