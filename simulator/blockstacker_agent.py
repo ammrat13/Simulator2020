@@ -7,11 +7,14 @@ Last Modified: Binit on 3/2
 
 import pybullet as p
 from math import atan2
-from random import gauss
+from random import gauss, vonmisesvariate
 
 from simulator.differentialdrive import DifferentialDrive
 from simulator.utilities import Utilities
 from planning2020 import planning
+
+COM_TO_SIP = .174676
+COM_TO_AXE = .074676
 
 started = False
 state = 0
@@ -57,18 +60,41 @@ class BlockStackerAgent:
                                     targetVelocities=[-2, 2],
                                     forces=[1, 1])
 
-    def get_pose(self):
-        noise = .02
-        r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
-        p_pos = list(p.multiplyTransforms(r_pos, r_ort, [0,.174676,0], [0,0,0,1])[0])
-        p_pos[0] += gauss(0, noise)
-        p_pos[1] += gauss(0, noise)
-        p_theta = atan2(p_pos[1]-r_pos[1], p_pos[0]-r_pos[0])
-        return (p_pos[0], p_pos[1], p_theta)
+    # Utility methods for converting between representations
+    def __pose_to_posort__(self, pose, SPAWN_Z=.05):
+        # Position is easy -- we are given X, Y, Z. Just remember it is the 
+        #   position of the single integrator point, not the robot itself
+        # For theta, we can use axis angle, but remember default orientation 
+        #   is .707 - .707k, not identity
+        # We can use axis angle to get the desired quaternion
+        # Orientation is (cos(t/2) + sin(t/2)k) * (.707 - .707k)
+        return (
+            (pose[0] - COM_TO_SIP*cos(pose[2]), pose[1] - COM_TO_SIP*sin(pose[2]), SPAWN_Z),
+            (0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2)))
+        )
+        
+    def __posort_to_pose__(self, pos, ort):
+        # Just use a utility method to extrapolate the SIP
+        p_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_SIP,0], [0,0,0,1])[0][0:2]
+        a_pos = p.multiplyTransforms(pos, ort, [0,COM_TO_AXE,0], [0,0,0,1])[0][0:2]
+        p_theta = atan2(p_pos[1]-a_pos[1], p_pos[0]-a_pos[0])
+        return (*p_pos, p_theta)
 
-    def set_pose(self, pose):
-        # TODO - fix orientation
-        p.resetBasePositionAndOrientation(self.robot, [pose[0], pose[1], 0.07], [0, 0, -.707, .707])
+    def get_pose(self, NOISE_POS=0.02, NOISE_ANG=10):
+        # Get the pose
+        r_pos, r_ort = p.getBasePositionAndOrientation(self.robot)
+        pose = list(self.__posort_to_pose__(r_pos, r_ort))
+        # We have to edit since we add noise
+        pose[0] += gauss(0, NOISE_POS)
+        pose[1] += gauss(0, NOISE_POS)
+        pose[2] += vonmisesvariate(0, NOISE_ANG)
+        # Return as needed
+        return tuple(pose)
+
+    def set_pose(self, pose, SPAWN_Z=.05):
+        # Use the utility method
+        p.resetBasePositionAndOrientation(self.robot,
+            *self.__pose_to_posort__(pose, SPAWN_Z=SPAWN_Z))
         return self.get_pose()
 
     def read_wheel_velocities(self, noisy=True):
