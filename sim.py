@@ -11,6 +11,7 @@ SRIMAGE = 4
 SRPOSE = 5
 SRWHEELS = 6
 SRENABLED = 7
+SRREMOVELEGO = 9
 
 class SimConfig:
     def __init__(self, bin_configuration_yaml):
@@ -81,6 +82,8 @@ def _sim_server(q, s, sim_config):
             elif req_token[0] == SRENABLED:
                 g.mobile_agent.enabled = req_token[1]
                 s.put(g.mobile_agent.enabled)
+            elif req_token[0] == SRREMOVELEGO:
+                s.put(g.legos.remove_lego_urdf(req_token[1]))
         elif req_token == SRRESET:
             s.put(g.reset())
         elif req_token == SREND:
@@ -131,6 +134,9 @@ def set_time(time):
 
 def read_robot_cam():
     return request(SRIMAGE)
+
+def remove_lego(n):
+    return request((SRREMOVELEGO, n))
 
 def get_robot_pose():
     return request(SRPOSE)

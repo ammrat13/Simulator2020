@@ -29,7 +29,10 @@ class Legos:
         Right now there isn't much of a need for internal state, but when we 
         start keeping track of score this may expand.
         """
+        # Keep track of the block ids and whether they have been removed
+        # Do it in this way so the block indices don't change
         self.block_ids : List[int] = []
+        self.block_removed : List[bool] = []
 
     def __str__(self) -> str:
         """Prints out instance variables."""
@@ -92,3 +95,16 @@ class Legos:
 
             # Append the block id to the list we are maintaining
             self.block_ids.append(b_id)
+            # Mark it as not removed
+            self.block_removed.append(False)
+
+    def remove_lego_urdf(self, lego_num):
+        # We may get an invalid index
+        # Do nothing if we do that
+        try:
+            # Only try to remove it if it has not already been
+            if not self.block_removed[lego_num]:
+                p.removeBody(self.block_ids[lego_num])
+                self.block_removed[lego_num] = True
+        except:
+            pass
