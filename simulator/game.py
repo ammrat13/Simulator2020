@@ -91,9 +91,7 @@ class Game:
         """Loading the agents
         Including the button robot and the mobile block stacking robot.
         """
-        self.mobile_agent.load_urdf()
-        if initial_mobile_pose:
-            self.mobile_agent.set_pose(initial_mobile_pose)
+        pass
 
     def load_ui(self):
         """Loading the UI components
@@ -197,6 +195,4 @@ class Game:
         if self.use_interactive and self.mobile_agent.enabled:
             self.mobile_agent.drive.process_keyboard_events(normalize=True)
 
-        # self.monitor_buttons()
-        self.legos.step(self.mobile_agent.robot, self.mobile_agent.tower_link)
-        self.mobile_agent.step()
+        self.monitor_buttons()

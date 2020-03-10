@@ -92,9 +92,3 @@ class Legos:
 
             # Append the block id to the list we are maintaining
             self.block_ids.append(b_id)
-
-    def step(self, robot_id, robot_link_id):
-        for lego_id in self.block_ids:
-            if len(p.getClosestPoints(robot_id, lego_id, 0.004, linkIndexA=robot_link_id)) > 0:
-                self.block_ids.remove(lego_id)
-                p.removeBody(lego_id)

@@ -72,8 +72,3 @@ class DifferentialDrive:
         elif normalize:
             self.__normalizeLTargetVel__()
             self.__normalizeRTargetVel__()
-
-    def step(self, robot_id, enabled):
-        p.setJointMotorControlArray(robot_id, self.motor_links, p.VELOCITY_CONTROL,
-                                    targetVelocities=[-self.rtarget_vel * self.rskew, self.ltarget_vel * self.lskew] if enabled else [0, 0],
-                                    forces=[self.max_force, self.max_force])
