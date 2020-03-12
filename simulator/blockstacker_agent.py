@@ -48,6 +48,19 @@ class BlockStackerAgent:
         self.camera_v_res = 300
         self.camera_focal_len = .1
 
+    # Utility methods for converting between representations
+    def __pose_to_posort__(self, pose, SPAWN_Z=.05):
+        # Position is easy -- we are given X, Y, Z. Just remember it is the 
+        #   position of the single integrator point, not the robot itself
+        # For theta, we can use axis angle, but remember default orientation 
+        #   is .707 - .707k, not identity
+        # We can use axis angle to get the desired quaternion
+        # Orientation is (cos(t/2) + sin(t/2)k) * (.707 - .707k)
+        return (
+            (pose[0] - COM_TO_SIP*cos(pose[2]), pose[1] - COM_TO_SIP*sin(pose[2]), SPAWN_Z),
+            (0, 0, .707 * (sin(pose[2]/2) - cos(pose[2]/2)), .707 * (sin(pose[2]/2) + cos(pose[2]/2)))
+        )
+
     def capture_images(self, poses, MAKE_TRANSPARENT_BEFORE=True, MAKE_VISIBLE_AFTER=True):
         # The threshold at which objects become invisible for this method
         # Is a weird non-linear function:
@@ -55,7 +68,7 @@ class BlockStackerAgent:
         # Algebra gives `1` for what the mask should be, but that doesn't 
         #   match observation
         # Set it to a value close to one
-        DEPTH_MASK = .99
+        DEPTH_MASK = .999
 
         ret = []
         for po in poses:

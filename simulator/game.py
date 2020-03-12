@@ -86,7 +86,6 @@ class Game:
         Including field, buttons, and more.
         """
         self.field.load_urdf()
-        self.legos.load_lego_urdfs([(0, -0.3, 0.1, "#00ffff")])
 
     def load_agents(self, initial_mobile_pose=None):
         """Loading the agents
@@ -193,12 +192,3 @@ class Game:
 
         if not self.hide_ui:
             self.read_ui()
-        if self.use_interactive and self.mobile_agent.enabled:
-            self.mobile_agent.drive.process_keyboard_events(normalize=True)
-
-        # self.monitor_buttons()
-        self.legos.step(self.mobile_agent.robot, self.mobile_agent.tower_link)
-        self.mobile_agent.step()
-        a = self.mobile_agent.capture_images([(0,0,3.14)])
-        i = Image.fromarray(a[0], "RGBA")
-        i.save("../thing.png", "PNG")

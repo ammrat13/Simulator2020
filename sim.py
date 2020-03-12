@@ -83,13 +83,10 @@ def _sim_server(q, s, sim_config):
             elif req_token[0] == SRENABLED:
                 g.mobile_agent.enabled = req_token[1]
                 s.put(g.mobile_agent.enabled)
-<<<<<<< HEAD
             elif req_token[0] == SRREMOVELEGO:
                 s.put(g.legos.remove_lego_urdf(req_token[1]))
-=======
             elif req_token[0] == SRMANYIMAGES:
                 s.put(g.mobile_agent.capture_images(req_token[1]))
->>>>>>> origin/image-captures
         elif req_token == SRRESET:
             s.put(g.reset())
         elif req_token == SREND:
@@ -141,13 +138,11 @@ def set_time(time):
 def read_robot_cam():
     return request(SRIMAGE)
 
-<<<<<<< HEAD
 def remove_lego(n):
     return request((SRREMOVELEGO, n))
-=======
+
 def get_simulated_images(poses):
     return request((SRMANYIMAGES, poses))
->>>>>>> origin/image-captures
 
 def get_robot_pose():
     return request(SRPOSE)
