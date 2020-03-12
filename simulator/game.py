@@ -8,6 +8,7 @@ Last Modified: Binit on 2/15
 import os
 import time
 import pybullet as p
+from PIL import Image
 
 from simulator.field import Field
 from simulator.legos import Legos
@@ -195,4 +196,9 @@ class Game:
         if self.use_interactive and self.mobile_agent.enabled:
             self.mobile_agent.drive.process_keyboard_events(normalize=True)
 
-        self.monitor_buttons()
+        # self.monitor_buttons()
+        self.legos.step(self.mobile_agent.robot, self.mobile_agent.tower_link)
+        self.mobile_agent.step()
+        a = self.mobile_agent.capture_images([(0,0,3.14)])
+        i = Image.fromarray(a[0], "RGBA")
+        i.save("../thing.png", "PNG")
