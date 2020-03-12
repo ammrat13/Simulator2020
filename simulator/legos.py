@@ -39,30 +39,33 @@ class Legos:
         """Returns `__str__` for easy debugging."""
         return str(self)
 
-    def load_lego_urdfs(self, blocks: List[Tuple[float, float, str]]) -> None:
+    def load_lego_urdfs(self, blocks: List[Tuple[int, float]]) -> None:
         """Loads the blocks specified in the list.
         Takes in a list of x and y positions, as well as the rgb color to 
         make the blocks, and loads them upright into the play field. Also 
         does validation to make sure the blocks are in range, and throws an 
         exception if they are not.
 
-        :param blocks: a list of tuples of x, y, and rgb hex
+        :param blocks: a list of tuples of bin-offset values
         :raises ValueError: if the x or y is out of range or hex is invalid
         """
+        BIN_XS = [-0.5461, -0.27305, 0.0, 0.27305, 0.5461]
+        BIN_YBASE = .2667
+        BIN_COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#000000', '#ffffff', '#000000', '#ffffff']
 
         for b in blocks:
-            # For readability
-            b_x = b[0]
-            b_y = b[1]
-            b_z = b[2]
+            # Convert from bin-offset to xyz
+            b_x = BIN_XS[(b[0]-1)%5] # Note one index
+            b_y = (1 if b[0] >= 6 else -1) * (BIN_YBASE + b[1])
+            b_z = .01
 
             # Check that the color is valid with regex
-            if re.match(r"#[0-9a-f]{6}", b[3]) == None:
+            if re.match(r"#[0-9a-f]{6}", BIN_COLORS[b[0]-1]) == None:
                 raise ValueError("Must have valid rgb hex color")
             # Compute its color
             # We hard code the alpha as it must be exactly 0 or 1
             # From stackoverflow.com/questions/29643352/converting-hex-to-rgb-value-in-python
-            b_color = [int(b[3].lstrip('#')[i:i+2], 16) / 256 for i in (0,2,4)] + [1]
+            b_color = [int(BIN_COLORS[b[0]-1].lstrip('#')[i:i+2], 16) / 256 for i in (0,2,4)] + [1]
 
             # Check that it is valid
             # Basic sanity check that it is in bin area for now
