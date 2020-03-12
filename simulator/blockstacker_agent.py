@@ -40,12 +40,12 @@ class BlockStackerAgent:
         self.blink_count = 0
 
         self.camera_projection_matrix = p.computeProjectionMatrixFOV(
-          fov=45.0,
-          aspect=1.0,
+          fov=62.2,
+          aspect=16/9,
           nearVal=0.1,
           farVal=3.1)
-        self.camera_h_res = 300
-        self.camera_v_res = 300
+        self.camera_h_res = 640
+        self.camera_v_res = 360
         self.camera_focal_len = .1
 
     # Utility methods for converting between representations
